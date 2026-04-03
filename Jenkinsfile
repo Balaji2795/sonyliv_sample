@@ -1,8 +1,6 @@
 pipeline {
     agent any
-tools {
-    sonarScanner 'SonarScanner'
-}
+
     environment {
         DOCKER_IMAGE = 'vamsichamarthi/sonyliv'
         IMAGE_TAG = "${BUILD_NUMBER}"
@@ -32,20 +30,23 @@ tools {
             }
         }
 
-        stage('SonarQube Scan') {
+       stage('SonarQube Scan') {
     steps {
-        withSonarQubeEnv('sq') {
-            withCredentials([string(
-                credentialsId: 'Sonarqube_token',
-                variable: 'SONAR_TOKEN'
-            )]) {
-                sh '''
-                sonar-scanner \
-                -Dsonar.projectKey=sonyliv \
-                -Dsonar.sources=. \
-                -Dsonar.host.url=$SONAR_HOST_URL \
-                -Dsonar.login=$SONAR_TOKEN
-                '''
+        script {
+            def scannerHome = tool 'SonarScanner'
+            withSonarQubeEnv('sq') {
+                withCredentials([string(
+                    credentialsId: 'Sonarqube_token',
+                    variable: 'SONAR_TOKEN'
+                )]) {
+                    sh '''
+                    ${scannerHome}/bin/sonar-scanner \
+                    -Dsonar.projectKey=sonyliv \
+                    -Dsonar.sources=. \
+                    -Dsonar.host.url=$SONAR_HOST_URL \
+                    -Dsonar.login=$SONAR_TOKEN
+                    '''
+                }
             }
         }
     }
