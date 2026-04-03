@@ -32,7 +32,7 @@ pipeline {
 
         stage('SonarQube Scan (Optional)') {
             steps {
-        withSonarQubeEnv('SonarQube') {
+        withSonarQubeEnv('sq') {
             withCredentials([string(
                 credentialsId: 'Sonarqube_token',
                 variable: 'SONAR_TOKEN'
