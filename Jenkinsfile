@@ -1,6 +1,8 @@
 pipeline {
     agent any
-
+tools {
+    sonarScanner 'SonarScanner'
+}
     environment {
         DOCKER_IMAGE = 'vamsichamarthi/sonyliv'
         IMAGE_TAG = "${BUILD_NUMBER}"
@@ -30,24 +32,24 @@ pipeline {
             }
         }
 
-        stage('SonarQube Scan (Optional)') {
-            steps {
+        stage('SonarQube Scan') {
+    steps {
         withSonarQubeEnv('sq') {
             withCredentials([string(
                 credentialsId: 'Sonarqube_token',
                 variable: 'SONAR_TOKEN'
             )]) {
-                sh """
+                sh '''
                 sonar-scanner \
                 -Dsonar.projectKey=sonyliv \
                 -Dsonar.sources=. \
-                -Dsonar.host.url=http://13.233.172.129:9000 \
+                -Dsonar.host.url=$SONAR_HOST_URL \
                 -Dsonar.login=$SONAR_TOKEN
-                """
+                '''
             }
         }
     }
-        }
+}
 
         stage('Docker Cleanup') {
             steps {
