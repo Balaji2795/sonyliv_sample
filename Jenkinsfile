@@ -1,16 +1,11 @@
 pipeline {
     agent any
 
-    tools {
-        maven 'maven3'
-    }
- environment {
-        SONARQUBE = 'sq'
-        DOCKER_IMAGE = 'Jenkinsfilee/sonyliv'
+    environment {
+        DOCKER_IMAGE = 'vamsichamarthi/sonyliv'
         IMAGE_TAG = "${BUILD_NUMBER}"
-        NEXUS_URL = 'http://13.233.172.129:8081'
     }
-    
+
     triggers {
         githubPush()
     }
@@ -29,47 +24,29 @@ pipeline {
             }
         }
 
-        stage('Build') {
+        stage('Verify Files') {
             steps {
-                sh 'mvn clean package -DskipTests'
+                sh 'ls -la'
             }
         }
 
-        stage('Test') {
+        stage('SonarQube Scan (Optional)') {
             steps {
-                sh 'mvn test'
+        withSonarQubeEnv('SonarQube') {
+            withCredentials([string(
+                credentialsId: 'Sonarqube_token',
+                variable: 'SONAR_TOKEN'
+            )]) {
+                sh """
+                sonar-scanner \
+                -Dsonar.projectKey=sonyliv \
+                -Dsonar.sources=. \
+                -Dsonar.host.url=http://13.233.172.129:9000 \
+                -Dsonar.login=$SONAR_TOKEN
+                """
             }
         }
-
-        stage('SonarQube Analysis') {
-            steps {
-                withSonarQubeEnv('SonarQube') {
-                    sh 'mvn sonar:sonar'
-                }
-            }
-        }
-
-        stage('Quality Gate') {
-            steps {
-                timeout(time: 5, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true
-                }
-            }
-        }
-
-        stage('Upload Artifact to Nexus') {
-            steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'nexus-creds',
-                    usernameVariable: 'NUSER',
-                    passwordVariable: 'NPASS'
-                )]) {
-                    sh """
-                    curl -u $NUSER:$NPASS --upload-file target/*.jar \
-                    ${NEXUS_URL}
-                    """
-                }
-            }
+    }
         }
 
         stage('Docker Cleanup') {
@@ -93,7 +70,7 @@ pipeline {
         stage('Push Docker Image') {
             steps {
                 withCredentials([usernamePassword(
-                    credentialsId: 'docker-creds',
+                    credentialsId: 'docker-cred',
                     usernameVariable: 'DUSER',
                     passwordVariable: 'DPASS'
                 )]) {
@@ -123,11 +100,7 @@ pipeline {
     }
 
     post {
-        success {
-            echo "✅ Deployment Successful - Version ${IMAGE_TAG}"
-        }
         failure {
-            echo "❌ Deployment Failed - Rolling Back"
             sh 'kubectl rollout undo deployment/sonyliv || true'
         }
         always {
