@@ -39,13 +39,13 @@ pipeline {
                     credentialsId: 'Sonarqube_token',
                     variable: 'SONAR_TOKEN'
                 )]) {
-                    sh '''
+                    sh """
                     ${scannerHome}/bin/sonar-scanner \
                     -Dsonar.projectKey=sonyliv \
                     -Dsonar.sources=. \
                     -Dsonar.host.url=$SONAR_HOST_URL \
                     -Dsonar.login=$SONAR_TOKEN
-                    '''
+                    """
                 }
             }
         }
