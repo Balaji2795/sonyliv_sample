@@ -98,15 +98,6 @@ pipeline {
     }
 }
         
-        stage('Deploy to Kubernetes') {
-            steps {
-                sh """
-                kubectl set image deployment/sonyliv \
-                sonyliv=${DOCKER_IMAGE}:${IMAGE_TAG}
-                """
-            }
-        }
-
         stage('Verify Deployment') {
             steps {
                 sh 'kubectl rollout status deployment/sonyliv'
